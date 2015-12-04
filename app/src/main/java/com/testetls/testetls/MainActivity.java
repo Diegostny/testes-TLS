@@ -23,7 +23,7 @@ import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLSession;
 
 public class MainActivity extends Activity {
-    private static final String DEBUG_TAG = "Teste-TLS";
+    private static final String DEBUG_TAG = "Testes-TLS";
     private TextView textView;
     private EditText urlText;
     private Button button;
