@@ -17,10 +17,13 @@ import java.io.InputStreamReader;
 import java.io.Reader;
 import java.io.UnsupportedEncodingException;
 import java.net.URL;
+
+import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.HttpsURLConnection;
+import javax.net.ssl.SSLSession;
 
 public class MainActivity extends Activity {
-    private static final String DEBUG_TAG = "Teste HTTPS";
+    private static final String DEBUG_TAG = "Teste-TLS";
     private TextView textView;
     private EditText urlText;
     private Button button;
@@ -73,66 +76,79 @@ public class MainActivity extends Activity {
         }
     }
 
-    /*
-    public class MyHostnameVerifier implements HostnameVerifier {
-        public boolean verify(String hostname, SSLSession session) {
-            // pop up an interactive dialog box
-            // or insert additional matching logic
-            if (hostname == "a248.e.akamai.net") {
-                return true;
-            } else return false;
-        }
-    }
-    */ /*
-    public static X509TrustManager findX509TrustManager(TrustManager[] tms){
-        for (  TrustManager tm : tms) {
-            if (tm instanceof X509TrustManager) {
-                return (X509TrustManager)tm;
-            }
-        }
-        return null;
-    } */
 
     private String downloadUrl(String myurl) throws IOException {
         InputStream is = null;
-        // Only display the first 500 characters of the retrieved
-        // web page content.
+        // Only display the first 500 characters of the retrieved web page content.
         int len = 500;
 
         try {
             URL url = new URL(myurl);
-            HttpsURLConnection conn = (HttpsURLConnection) url.openConnection();
+            // ***********************************************************************************//
+            /*
+            // modifica o Hostname Verifier Default para todas as conexões:
+            HttpsURLConnection.setDefaultHostnameVerifier(new HostnameVerifier() {
+                @Override
+                public boolean verify(String hostname, SSLSession session) {
+                    Log.d(DEBUG_TAG, "Custom_Default_Hostname_Verified: " + hostname);
+                    if (hostname.equals("www.facebook.com") || hostname.equals("m.facebook.com"))
+                        //if (hostname.equals("www.google.com") || hostname.equals("www.google.com.br"))
+                        //if (hostname.equals("www.bradesco.com.br" ))
+                        return true;
+                    return false;
+                }
+            });
+            */
+            // cria uma conexão utilizando o Hostname Verfifier Default:
+            HttpsURLConnection conn1 = (HttpsURLConnection) url.openConnection();
+            conn1.connect();
+            Log.d(DEBUG_TAG, "Conn1: \n" +
+                    "Suite: " + conn1.getCipherSuite().toString() + "\n" +
+                    "HostName: " + conn1.getHostnameVerifier().toString() + "\n" +
+                    "Certs in chain: " + conn1.getServerCertificates().length + "\n" +
+                    conn1.getServerCertificates()[0].toString());
+            // ***********************************************************************************//
 
-        ///////////////////////////
-            //conn.setHostnameVerifier(new MyHostnameVerifier());
-            //Log.d(DEBUG_TAG, conn.getPeerPrincipal().toString());
-        ///////////////////////////
-
-            conn.setReadTimeout(10000 /* milliseconds */);
-            conn.setConnectTimeout(15000 /* milliseconds */);
-            conn.setRequestMethod("GET");
-            conn.setDoInput(true);
+            // cria uma conexão utilizando o Hostname Verfifier Default que é modificado a seguir:
+            HttpsURLConnection conn2 = (HttpsURLConnection) url.openConnection();
+            // modifica o Hostname Verifier para apenas esta conexão (conn2):
+            conn2.setHostnameVerifier(new HostnameVerifier() {
+                @Override
+                public boolean verify(String hostname, SSLSession session) {
+                    Log.d(DEBUG_TAG, "Custom_Hostname_Verified: " + hostname);
+                    if (hostname.equals("www.facebook.com") || hostname.equals("m.facebook.com"))
+                    //if (hostname.equals("www.google.com") || hostname.equals("www.google.com.br"))
+                    //if (hostname.equals("www.bradesco.com.br"))
+                        return true;
+                    return false;
+                }
+            });
+            conn2.setReadTimeout(10000 /* milliseconds */);
+            conn2.setConnectTimeout(15000 /* milliseconds */);
+            conn2.setRequestMethod("GET");
+            conn2.setDoInput(true);
             // Starts the query
-            conn.connect();
+            conn2.connect();
 
-        ////////////////////////////////
-            String dataCert;
-            dataCert = "Suite: " + conn.getCipherSuite().toString() + "\n" +
-                    "HostName: " + conn.getHostnameVerifier().toString() + "\n" +
-                    "Certs in chain: " + conn.getServerCertificates().length + "\n" +
-                    conn.getServerCertificates()[0].toString() + "\n" +
-                    "Peer Host: " + conn.getPeerPrincipal();
-            Log.d(DEBUG_TAG, dataCert);
-        ////////////////////////////////
+            // ***********************************************************************************//
+            Log.d(DEBUG_TAG, "Conn2: \n" +
+                    "Suite: " + conn2.getCipherSuite().toString() + "\n" +
+                    "HostName: " + conn2.getHostnameVerifier().toString() + "\n" +
+                    "Certs in chain: " + conn2.getServerCertificates().length + "\n" +
+                    conn2.getServerCertificates()[0].toString() );
+            // ***********************************************************************************//
 
-            int response = conn.getResponseCode();
+            int response = conn2.getResponseCode();
             Log.d(DEBUG_TAG, "The response is: " + response);
-            is = conn.getInputStream();
+            is = conn2.getInputStream();
             // Convert the InputStream into a string
             String contentAsString = readIt(is, len);
             return contentAsString;
             // Makes sure that the InputStream is closed after the app is
             // finished using it.
+        } catch (Exception e){
+            e.printStackTrace();
+            return e.getMessage().toString();
         } finally {
             if (is != null) {
                 is.close();
